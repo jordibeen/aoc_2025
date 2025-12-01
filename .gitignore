@@ -1,0 +1,9 @@
+# Apple files
+.DS_Store
+
+# Rust files
+/target
+
+*/boilerplate
+
+input.txt
