@@ -5,11 +5,14 @@ fn main() {
     let start: Instant = Instant::now();
 
     let input: &str = include_str!("./input.txt");
-    println!("pt1: {} (finished in {:.2?})", pt1(&input), start.elapsed());
+    let (fresh_ranges, ids) = parse(&input);
+    println!("pt1: {}", pt1(&fresh_ranges, &ids));
+    println!("pt2: {}", pt2(&fresh_ranges));
+    println!("Execution time: {:.2?}", start.elapsed());
 }
 
-fn pt1(input: &str) -> i32 {
-    let (fresh_ranges, ids): (Vec<(i64, i64)>, Vec<i64>) = input
+fn parse(input: &str) -> (Vec<(i64, i64)>, Vec<i64>) {
+    input
         .split_once("\n\n")
         .map(|(s1, s2)| {
             (
@@ -27,8 +30,10 @@ fn pt1(input: &str) -> i32 {
                     .collect::<Vec<i64>>(),
             )
         })
-        .unwrap();
+        .unwrap()
+}
 
+fn pt1(fresh_ranges: &Vec<(i64, i64)>, ids: &Vec<i64>) -> i32 {
     ids.iter()
         .filter(|id| {
             fresh_ranges
@@ -40,6 +45,37 @@ fn pt1(input: &str) -> i32 {
         .count() as i32
 }
 
+fn pt2(fresh_ranges: &Vec<(i64, i64)>) -> i64 {
+    let mut saved_ranges: Vec<(i64, i64)> = vec![];
+
+    fresh_ranges.iter().for_each(|range| {
+        let mut current_ranges = vec![*range];
+
+        saved_ranges.iter().for_each(|saved| {
+            let mut new_ranges = vec![];
+
+            current_ranges.iter().for_each(|curr| {
+                if curr.1 < saved.0 || curr.0 > saved.1 {
+                    new_ranges.push(*curr);
+                } else if curr.0 < saved.0 && curr.1 >= saved.0 {
+                    new_ranges.push((curr.0, saved.0 - 1));
+                } else if curr.0 <= saved.1 && curr.1 > saved.1 {
+                    new_ranges.push((saved.1 + 1, curr.1));
+                } else if curr.0 < saved.0 && curr.1 > saved.1 {
+                    new_ranges.push((curr.0, saved.0 - 1));
+                    new_ranges.push((saved.1 + 1, curr.1));
+                }
+            });
+
+            current_ranges = new_ranges;
+        });
+
+        saved_ranges.extend(current_ranges);
+    });
+
+    saved_ranges.iter().map(|saved| saved.1 - saved.0 + 1).sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -47,7 +83,16 @@ mod tests {
     #[test]
     fn pt1_test() {
         let input = include_str!("./example.txt");
-        let result = pt1(&input);
+        let (fresh_ranges, ids) = parse(&input);
+        let result = pt1(&fresh_ranges, &ids);
         assert_eq!(result, 3);
+    }
+
+    #[test]
+    fn pt2_test() {
+        let input = include_str!("./example.txt");
+        let (fresh_ranges, _) = parse(&input);
+        let result = pt2(&fresh_ranges);
+        assert_eq!(result, 14);
     }
 }
